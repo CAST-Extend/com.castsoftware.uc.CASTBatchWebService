@@ -1,0 +1,12 @@
+[
+	{
+		"name":"Run getJSONData",
+		"description":"Run batch file to update the report server with the latest CAST Snapshot information",
+		"fullPath":"C:\\CASTMS\\Batches\\RunAnalysis.bat"
+	},
+	{
+		"name":"Test Batch",
+		"description":"Test Batch with 3 params",
+		"fullPath":"C:\\CASTMS\\Batches\\testBatch.bat"
+	}
+]
