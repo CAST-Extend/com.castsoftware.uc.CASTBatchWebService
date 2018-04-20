@@ -26,7 +26,7 @@ public class CastBatchWebServiceServer {
 	{
 		String version = CastBatchWebServiceServer.class.getPackage().getSpecificationVersion();
 		if (version == null)
-			version = "1.4";
+			version = "1.5";
 		int build = 0;
 		try
 		{

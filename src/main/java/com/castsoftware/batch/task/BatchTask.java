@@ -5,6 +5,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ import com.castsoftware.util.GlobalPropertiesManager;
 import com.castsoftware.vps.ValidationProbesService;
 import com.google.gson.Gson;
 
+
 public class BatchTask extends Task
 {
 	protected static final GlobalProperties globalProperties = GlobalPropertiesManager.getGlobalProperties();
@@ -35,6 +38,7 @@ public class BatchTask extends Task
 	private String versionName = "";
 	private Date releaseDate;
 	private String stepIdentifier;
+	private int FinalMessage=0;
 
 	public List<ProcessBuilder> getPbList()
 	{
@@ -44,7 +48,6 @@ public class BatchTask extends Task
 	public BatchTask(int taskId, ICallBack callback)
 	{
 		super(taskId, callback);
-		this.appName = "";
 	}
 
 	public BatchTask(int taskId, ICallBack callback, String appName, String versionName, Date releaseDate,
@@ -56,6 +59,7 @@ public class BatchTask extends Task
 		this.versionName = versionName;
 		this.releaseDate = releaseDate;
 		this.stepIdentifier = stepIdentifier;
+		this.FinalMessage = taskId;
 	}
 
 	public void AddProcess(ProcessBuilder pb)
@@ -84,6 +88,8 @@ public class BatchTask extends Task
 	{
 		return exitStr;
 	}
+	
+	
 
 	@Override
 	protected void runLogic()
@@ -91,6 +97,9 @@ public class BatchTask extends Task
 		Process p;
 		String opDesc = "";
 		exitStr = " - OK";
+		int pid = 0;
+		String pidd="";
+		long piddProcess=0;
 		try {
 			try {
 				for (int n = 0; n < pbList.size(); n++) {
@@ -101,19 +110,27 @@ public class BatchTask extends Task
 					preRunTasks(pb.command());
 					
 					p = pb.start();
+					//piddProcess = getProcessID(p);
+					pidd = ManagementFactory.getRuntimeMXBean().getName();
+					//updateCurrentPID(appName,pidd);
 
 					BufferedReader br = null;
 					BufferedWriter out = null;
 					try {
 						br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 						String line = null;
+						
 						out = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
-						while ((line = br.readLine()) != null) {
+						while ((line = br.readLine()) != null) 
+						{
+							
 							if (line.toUpperCase().contains("PASSWORD"))
 							{
 								continue;
 							}
-							
+
+				            
+				            
 							output.add(line);
 							out.newLine();
 							out.flush();
@@ -131,6 +148,10 @@ public class BatchTask extends Task
 					output.add("******************************");
 
 					if (exitVal != 0 || !validate(pb)) {
+						if(opDesc.equals("Backup: Managment Database "))
+						{
+							exitVal = 1000;
+						}
 						exitStr = " - Error";
 						pbList.clear();
 					} 
@@ -138,13 +159,20 @@ public class BatchTask extends Task
 					int postRunExitVal = postRunTasks();
 					if (postRunExitVal !=0) exitVal = postRunExitVal;
 
-					if (!appName.isEmpty()) {
+					if (!appName.isEmpty()) 
+					{
+						if(FinalMessage != 999)
+						{
 						updateValidationService(appName, versionName, releaseDate, opDesc + exitStr, stepIdentifier);
+						}
 					}
 					
 					logger.debug(String.format("Exit Value: %d", exitVal));
 				}
-			} catch (IOException | InterruptedException e) {
+			} catch (IOException | InterruptedException e) 
+			{
+				
+				
 				exitStr = " - Exception";
 				output.add(String.format("Internal Error:  %s", e.getMessage()));
 				
@@ -153,7 +181,21 @@ public class BatchTask extends Task
 					updateValidationService(appName, versionName, releaseDate, opDesc + exitStr, stepIdentifier);
 				}
 			}
-		} catch (IOException | InterruptedException | UnsupportedOperationException | SOAPException e) {
+		} catch (IOException | InterruptedException | UnsupportedOperationException | SOAPException e) 
+		{
+			ArrayList<String> cmds = new ArrayList<String>();
+			cmds.add("taskkill");
+		    cmds.add("/T");
+		    cmds.add("/F");
+		    cmds.add("/PID");
+		    cmds.add("" + pidd);
+		    ProcessBuilder  pb1 = new ProcessBuilder(cmds);
+		    try {
+				pb1.start();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -181,6 +223,27 @@ public class BatchTask extends Task
 			output.add(String.format("Sending completion message: \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"", appName, versionName, castDate,
 					stepIdentifier, status));
 			vps.UpdateRescanStatus(appName, versionName, castDate, status, stepIdentifier);
+		}
+		output.add(" ");
+	}
+	
+	protected void updateCurrentPID(String appName, String PID) throws InterruptedException, IOException, UnsupportedOperationException,
+			SOAPException
+	{ 
+
+		logger.info(" ");
+		logger.info("Sending PID to Application Operations Portal: ");
+		logger.info(String.format(" -appName: %s ", appName));
+		logger.info(String.format(" -PID: %s ", PID)); 
+		logger.info(" ");
+
+		String validationProbService = globalProperties.getPropertyValue("validation.prob.service");
+		if (validationProbService != null && validationProbService.isEmpty()) {
+			output.add("Warning: Connection to AOP is not configured");
+		} else {
+			ValidationProbesService vps = new ValidationProbesService(validationProbService);
+			output.add(String.format("Sending current PID to AOP: \"%s\" \"%s\" ", appName, PID));
+			vps.setCurrentPID_IN_AOP(appName, PID);
 		}
 		output.add(" ");
 	}

@@ -365,7 +365,9 @@ public class DeliveryReportTask extends BatchTask
 				double changedChg = (float) changed / total;
 				totalChg = addedChg + removedChg + changedChg;
 				output.add(String.format("Total code changes: %s%% ", (totalChg * 100)));
-				if (totalChg > dmtChangePercent) 
+				double intTotChanged = (totalChg * 100);
+				double intFromProperties = (dmtChangePercent * 100) ;
+				if (intTotChanged > intFromProperties) 
 				{
 					retCode = 1;
 				}

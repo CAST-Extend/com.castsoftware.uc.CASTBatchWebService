@@ -4,7 +4,7 @@
 
   <groupId>com.castsoftware.batch</groupId>
   <artifactId>WSBatchServer</artifactId>
-  <version>1.4</version>
+  <version>1.5</version>
   <packaging>jar</packaging>
 
   <name>WSBatchServer</name>
@@ -12,7 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <buildNumber>25</buildNumber>
+    <buildNumber>4</buildNumber>
   </properties>
 
   <dependencies>
@@ -56,7 +56,12 @@
   <dependency>
   	<groupId>com.castsoftware.castapi</groupId>
   	<artifactId>CastAPI</artifactId>
-  	<version>1.5.5</version>
+  	<version>1.6.0</version>
+  </dependency>
+  <dependency>
+  	<groupId>postgresql</groupId>
+  	<artifactId>postgresql</artifactId>
+  	<version>9.1-901.jdbc4</version>
   </dependency>
   </dependencies>
   
